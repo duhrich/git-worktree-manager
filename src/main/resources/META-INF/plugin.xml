@@ -1,0 +1,24 @@
+<idea-plugin>
+    <id>com.github.gitworktreemanager</id>
+    <name>Git Worktree Manager</name>
+    <vendor>devin.uhrich</vendor>
+    <description><![CDATA[
+        A simple plugin to view and switch between Git worktrees.
+        <ul>
+            <li>Lists all worktrees for the current repository</li>
+            <li>Shows branch name for each worktree</li>
+            <li>Double-click to open worktree in a new IDE window</li>
+        </ul>
+    ]]></description>
+
+    <depends>com.intellij.modules.platform</depends>
+    <depends>Git4Idea</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <toolWindow id="Worktrees"
+                    anchor="left"
+                    secondary="true"
+                    factoryClass="com.github.gitworktreemanager.WorktreeToolWindowFactory"
+                    icon="/icons/toolWindow.svg"/>
+    </extensions>
+</idea-plugin>
