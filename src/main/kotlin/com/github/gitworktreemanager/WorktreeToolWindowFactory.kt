@@ -71,8 +71,15 @@ class WorktreePanel(private val project: Project) : JPanel(BorderLayout()) {
     }
 
     private fun openWorktree(worktree: WorktreeInfo) {
-        val path = Path.of(worktree.path)
-        ProjectUtil.openOrImport(path, OpenProjectTask())
+        val targetPath = Path.of(worktree.path)
+        val sourcePath = project.basePath?.let { Path.of(it) }
+
+        // Sync IDE config from current project to target worktree
+        if (sourcePath != null) {
+            IdeaConfigSync.syncConfig(sourcePath, targetPath)
+        }
+
+        ProjectUtil.openOrImport(targetPath, OpenProjectTask())
     }
 }
 

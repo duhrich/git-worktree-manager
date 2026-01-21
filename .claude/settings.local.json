@@ -1,0 +1,8 @@
+{
+  "enabledMcpjsonServers": [
+    "pine-mcp",
+    "figma-dev-mode-mcp-server",
+    "linear"
+  ],
+  "enableAllProjectMcpServers": true
+}
