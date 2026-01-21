@@ -7,33 +7,44 @@ import java.nio.file.Path
 /**
  * Syncs .idea configuration from source worktree to target worktree.
  *
- * Symlinks directories that are safe to share:
- * - runConfigurations/ (run/debug configs)
- * - inspectionProfiles/ (inspection settings)
- * - codeStyles/ (code formatting)
- * - dictionaries/ (spell check)
- * - scopes/ (custom scopes)
- *
- * Copies files that should be initialized but independent:
- * - misc.xml (SDK settings)
- * - *.iml (module files)
+ * Symlinks most config so changes are shared across worktrees.
+ * Only workspace.xml (window state, open files) stays independent.
  */
 object IdeaConfigSync {
 
     private val LOG = Logger.getInstance(IdeaConfigSync::class.java)
 
-    // Directories safe to symlink (shared across worktrees)
+    // Directories to symlink (shared across worktrees)
     private val SYMLINK_DIRS = listOf(
         "runConfigurations",
         "inspectionProfiles",
         "codeStyles",
         "dictionaries",
-        "scopes"
+        "scopes",
+        "libraries",        // project libraries
+        "artifacts",        // build artifacts config
+        "dataSources",      // database connections
+        "sqldialects"       // SQL dialect settings
     )
 
-    // Files to copy once if they don't exist
-    private val COPY_FILES = listOf(
-        "misc.xml"
+    // Files to symlink (shared across worktrees)
+    private val SYMLINK_FILES = listOf(
+        "misc.xml",         // SDK/interpreter settings
+        "modules.xml",      // module list
+        "vcs.xml",          // version control settings
+        "encodings.xml",    // file encodings
+        "compiler.xml",     // compiler settings
+        "jarRepositories.xml",
+        "kotlinc.xml",
+        "externalDependencies.xml"
+    )
+
+    // Files to NEVER symlink (workspace-specific)
+    private val SKIP_FILES = setOf(
+        "workspace.xml",    // window state, open files, breakpoints
+        "tasks.xml",        // task tracking
+        "usage.statistics.xml",
+        "sonarlint.xml"
     )
 
     fun syncConfig(sourcePath: Path, targetPath: Path) {
@@ -60,35 +71,27 @@ object IdeaConfigSync {
             }
         }
 
-        // Copy files (only if target doesn't exist)
-        for (file in COPY_FILES) {
+        // Symlink specific config files
+        for (file in SYMLINK_FILES) {
             val sourceFile = sourceIdea.resolve(file)
             val targetFile = targetIdea.resolve(file)
 
-            if (Files.exists(sourceFile) && !Files.exists(targetFile)) {
-                try {
-                    Files.copy(sourceFile, targetFile)
-                    LOG.info("Copied $file to $targetIdea")
-                } catch (e: Exception) {
-                    LOG.warn("Failed to copy $file: ${e.message}")
-                }
+            if (Files.exists(sourceFile)) {
+                createSymlink(sourceFile, targetFile)
             }
         }
 
-        // Copy .iml files
+        // Symlink .iml files
         try {
             Files.list(sourceIdea).use { stream ->
                 stream.filter { it.toString().endsWith(".iml") }
                     .forEach { sourceIml ->
                         val targetIml = targetIdea.resolve(sourceIml.fileName)
-                        if (!Files.exists(targetIml)) {
-                            Files.copy(sourceIml, targetIml)
-                            LOG.info("Copied ${sourceIml.fileName} to $targetIdea")
-                        }
+                        createSymlink(sourceIml, targetIml)
                     }
             }
         } catch (e: Exception) {
-            LOG.warn("Failed to copy .iml files: ${e.message}")
+            LOG.warn("Failed to symlink .iml files: ${e.message}")
         }
     }
 
